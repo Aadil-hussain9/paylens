@@ -866,3 +866,55 @@ java -jar build/libs/paylens-0.0.1-SNAPSHOT.jar \
 ```
 
 ---
+
+## Current Base Salary Update API
+
+Endpoint:
+
+```text
+PATCH /api/employees/{id}/compensation
+```
+
+Request body:
+
+```json
+{
+  "newSalary": 2800000,
+  "currency": "INR",
+  "reason": "PROMOTION"
+}
+```
+
+Validation and behavior:
+
+- `newSalary` is required and must be greater than `0`
+- `currency` is required and must exist in the seeded `fx_rate` table
+- `reason` is required and must be one of: `ANNUAL_REVIEW`, `PROMOTION`, `ROLE_CHANGE`, `MARKET_ADJUSTMENT`, `CORRECTION`, `OTHER`
+- If employee is missing, API returns `404 NOT_FOUND`
+- If concurrent modification is detected (optimistic lock), API returns `409 CONFLICT`
+
+Success response:
+
+```json
+{
+  "id": 1,
+  "employeeNumber": "EMP-00001",
+  "firstName": "Ava",
+  "lastName": "Patel-1",
+  "jobTitle": "Software Engineer",
+  "department": "Engineering",
+  "country": "India",
+  "employmentStatus": "ACTIVE",
+  "currentSalary": 2800000.00,
+  "currency": "INR"
+}
+```
+
+Notes:
+
+- This updates only current base salary and current currency on `employee`
+- No salary history or effective-dated compensation is stored in MVP
+- No FX conversion is performed during this update operation
+
+---
+

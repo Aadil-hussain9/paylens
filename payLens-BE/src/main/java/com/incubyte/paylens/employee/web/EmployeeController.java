@@ -2,10 +2,14 @@ package com.incubyte.paylens.employee.web;
 
 import java.util.Locale;
 
+import jakarta.validation.Valid;
+
 import org.springframework.data.domain.Sort;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,19 +17,23 @@ import org.springframework.web.bind.annotation.RestController;
 import com.incubyte.paylens.common.InvalidEmployeeQueryException;
 import com.incubyte.paylens.common.PageResponse;
 import com.incubyte.paylens.employee.domain.EmploymentStatus;
+import com.incubyte.paylens.employee.service.CompensationService;
 import com.incubyte.paylens.employee.service.EmployeeService;
 import com.incubyte.paylens.employee.web.dto.EmployeeDetailsResponse;
 import com.incubyte.paylens.employee.web.dto.EmployeeSearchCriteria;
 import com.incubyte.paylens.employee.web.dto.EmployeeSummaryResponse;
+import com.incubyte.paylens.employee.web.dto.UpdateCompensationRequest;
 
 @RestController
 @RequestMapping("/api/employees")
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final CompensationService compensationService;
 
-    public EmployeeController(EmployeeService employeeService) {
+    public EmployeeController(EmployeeService employeeService, CompensationService compensationService) {
         this.employeeService = employeeService;
+        this.compensationService = compensationService;
     }
 
     @GetMapping
@@ -70,6 +78,13 @@ public class EmployeeController {
             throw new InvalidEmployeeQueryException("Employee id must be greater than 0");
         }
         return employeeService.getEmployeeById(id);
+    }
+
+    @PatchMapping("/{id}/compensation")
+    public EmployeeDetailsResponse updateEmployeeCompensation(
+            @PathVariable long id,
+            @Valid @RequestBody UpdateCompensationRequest request) {
+        return compensationService.updateCurrentSalary(id, request);
     }
 
     private void validatePageSize(int pageSize) {

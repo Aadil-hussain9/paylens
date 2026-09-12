@@ -6,6 +6,8 @@ import java.util.List;
 import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,9 +28,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class,
-            MethodArgumentNotValidException.class, ConversionFailedException.class})
+            MethodArgumentNotValidException.class, ConversionFailedException.class, HttpMessageNotReadableException.class})
     ResponseEntity<ApiError> handleRequestBinding(Exception exception) {
         return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "The request parameters are invalid", List.of(exception.getMessage()));
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    ResponseEntity<ApiError> handleOptimisticLocking(ObjectOptimisticLockingFailureException exception) {
+        return build(HttpStatus.CONFLICT, "CONCURRENT_MODIFICATION",
+                "The employee was updated by another request. Please retry with the latest data.",
+                List.of("Concurrent update detected"));
     }
 
     @ExceptionHandler(Exception.class)

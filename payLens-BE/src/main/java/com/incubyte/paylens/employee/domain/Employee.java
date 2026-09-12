@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,6 +34,10 @@ public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
 
     @Column(name = "employee_number", nullable = false, unique = true, length = 50)
     private String employeeNumber;
@@ -74,6 +79,11 @@ public class Employee {
         this.employmentStatus = employmentStatus;
         this.currentSalary = currentSalary;
         this.currency = currency;
+    }
+
+    public void updateCurrentCompensation(BigDecimal newSalary, String newCurrency) {
+        this.currentSalary = newSalary;
+        this.currency = newCurrency;
     }
 }
 
