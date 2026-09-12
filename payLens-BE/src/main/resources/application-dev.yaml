@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: ${PAYLENS_DATASOURCE_URL:jdbc:postgresql://localhost:5432/paylens}
+    username: ${PAYLENS_DATASOURCE_USERNAME:paylens}
+    password: ${PAYLENS_DATASOURCE_PASSWORD:paylens}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+paylens:
+  employee:
+    seed:
+      enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.incubyte.paylens: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+

@@ -29,7 +29,7 @@ Guidance for AI coding agents working on the payLens backend. Read `README.md` f
 - No effective-dated salary history — only current salary lives on `Employee`.
 - Salary PATCH uses `@Version` optimistic locking; map `OptimisticLockingFailureException` to HTTP 409.
 - Analytics aggregations run in the database (JPQL/native), not Java streams.
-- Median: PostgreSQL `PERCENTILE_CONT` in prod, deterministic ordered window in H2 for tests.
+- Median: PostgreSQL `PERCENTILE_CONT` for production analytics; tests run against PostgreSQL-compatible behavior.
 - All list endpoints paginated (`Pageable`), max page size 200.
 - Controllers return DTOs, never JPA entities.
 - Services annotated `@Transactional` (write) or `@Transactional(readOnly = true)` (read). Controllers never open transactions.
@@ -52,7 +52,7 @@ If a change would introduce any of the above, stop and confirm.
 ./gradlew bootRun
 ```
 - `./gradlew test` has been run successfully against this workspace.
-- Local profiles once wired: `dev` (H2 file + seed on), `test` (in-memory H2), `prod` (PostgreSQL).
+- Local profiles: `dev` (PostgreSQL local/Docker), `test` (PostgreSQL on Docker Compose), `prod` (PostgreSQL).
 
 ## Testing expectations
 - JUnit 5 + Mockito for services and mappers.

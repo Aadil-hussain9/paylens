@@ -35,8 +35,7 @@ class EmployeeRepositoryTest {
     @Test
     void shouldFilterSearchPaginateAndSortInDatabase() {
         Page<Employee> page = employeeRepository.findAll(
-                Specification.<Employee>where((Specification<Employee>) null)
-                        .and(EmployeeSpecifications.hasSearchText("john"))
+                EmployeeSpecifications.hasSearchText("john")
                         .and(EmployeeSpecifications.hasCountry("India"))
                         .and(EmployeeSpecifications.hasDepartment("Engineering")),
                 PageRequest.of(0, 1, Sort.by(Sort.Direction.ASC, "lastName")));
@@ -49,7 +48,7 @@ class EmployeeRepositoryTest {
     @Test
     void shouldSortBySalaryDescending() {
         Page<Employee> page = employeeRepository.findAll(
-                Specification.<Employee>where((Specification<Employee>) null),
+                (root, query, criteriaBuilder) -> null, // Match all
                 PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "currentSalary")));
 
         assertThat(page.getContent())

@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    url: ${PAYLENS_DATASOURCE_URL}
+    username: ${PAYLENS_DATASOURCE_USERNAME}
+    password: ${PAYLENS_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        default_schema: public
+        generate_statistics: false
+  flyway:
+    enabled: true
+    default-schema: public
+    schemas: public
+    locations: classpath:db/migration
+    out-of-order: false
+
+paylens:
+  employee:
+    seed:
+      enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.incubyte.paylens: INFO
+    org.springframework.web: WARN
+

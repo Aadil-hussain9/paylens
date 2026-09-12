@@ -20,3 +20,11 @@ paylens:
     seed:
       enabled: false
 
+logging:
+  level:
+    root: WARN
+    com.incubyte.paylens: INFO
+
+
+
+
