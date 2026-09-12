@@ -6,6 +6,122 @@ This document is the **source of truth for backend scope, architecture, and conv
 
 ---
 
+## Analytics / Compensation Insights API
+
+Base path:
+
+```text
+/api/analytics
+```
+
+Reporting currency:
+
+- All monetary analytics values are normalized to `USD`
+- Source salaries remain stored in native employee currency
+- FX rates come from the static seeded `fx_rate` table (assessment/demo rates, not live market rates)
+
+Common filter query parameters (composable):
+
+- `country`
+- `department`
+- `role` (alias of `jobTitle`)
+- `jobTitle`
+
+If both `role` and `jobTitle` are provided, they must match.
+
+### 1) Summary
+
+```text
+GET /api/analytics/summary
+```
+
+Response fields:
+
+- `totalEmployees`
+- `totalPayroll`
+- `averageSalary`
+- `medianSalary`
+- `reportingCurrency`
+
+Example:
+
+```json
+{
+  "totalEmployees": 1250,
+  "totalPayroll": 18500000.00,
+  "averageSalary": 14800.00,
+  "medianSalary": 13200.00,
+  "reportingCurrency": "USD"
+}
+```
+
+### 2) Salary Distribution
+
+```text
+GET /api/analytics/salary-distribution
+```
+
+Buckets (USD-normalized):
+
+- `0-50K`
+- `50K-100K`
+- `100K-150K`
+- `150K-200K`
+- `200K+`
+
+Example:
+
+```json
+[
+  { "range": "0-50K", "employeeCount": 1250 },
+  { "range": "50K-100K", "employeeCount": 3200 }
+]
+```
+
+### 3) Grouped Analytics
+
+```text
+GET /api/analytics/by-country
+GET /api/analytics/by-department
+GET /api/analytics/by-role
+```
+
+Each endpoint returns per-group:
+
+- group key (`country` or `department` or `jobTitle`)
+- `employeeCount`
+- `totalPayroll` (USD)
+- `averageSalary` (USD)
+- `medianSalary` (USD)
+- `reportingCurrency`
+
+### Calculation Notes
+
+- **Normalization first**: `usd_salary = employee.current_salary / fx.rate_to_usd`
+- **Total payroll**: `SUM(usd_salary)`
+- **Average salary**: `AVG(usd_salary)`
+- **Median salary**: `PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY usd_salary)`
+  - PostgreSQL computes continuous percentile; for even row counts this interpolates the middle pair (for example `1000,2000,3000,4000 -> 2500`)
+
+### Empty Result Behavior
+
+- Summary returns:
+  - `totalEmployees = 0`
+  - `totalPayroll = 0.00`
+  - `averageSalary = 0.00`
+  - `medianSalary = 0.00`
+  - `reportingCurrency = "USD"`
+- Grouped endpoints return `[]`
+
+### Performance Notes
+
+- Aggregation, filtering, grouping, and median are all database-side queries
+- Backend returns only aggregated result sets to Java
+- Existing indexes on `employee(country)`, `employee(department)`, `employee(job_title)` support filter/group patterns
+- No extra index was added on `employee.currency` because join is against tiny `fx_rate` and observed workload is 10k rows
+
+---
+
 ## 1. Product scope (MVP)
 
 **In scope**

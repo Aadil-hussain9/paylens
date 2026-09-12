@@ -16,6 +16,8 @@ spring:
     locations: classpath:db/migration
 
 paylens:
+  analytics:
+    reporting-currency: USD
   employee:
     seed:
       enabled: false
