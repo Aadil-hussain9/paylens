@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: payLens
+  datasource:
+    url: ${PAYLENS_DATASOURCE_URL:jdbc:postgresql://localhost:5432/paylens}
+    username: ${PAYLENS_DATASOURCE_USERNAME:paylens}
+    password: ${PAYLENS_DATASOURCE_PASSWORD:paylens}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: public
+  flyway:
+    enabled: true
+    default-schema: public
+    schemas: public
+    locations: classpath:db/migration
+
+paylens:
+  employee:
+    seed:
+      enabled: false
