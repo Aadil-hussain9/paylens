@@ -117,7 +117,9 @@ public class EmployeeService {
                 employee.getJobTitle(),
                 employee.getDepartment(),
                 employee.getCountry(),
-                employee.getEmploymentStatus()
+                employee.getEmploymentStatus(),
+                employee.getCurrentSalary(),
+                employee.getCurrency()
         );
     }
 

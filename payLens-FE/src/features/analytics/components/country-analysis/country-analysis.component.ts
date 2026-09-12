@@ -1,4 +1,4 @@
-import { Component, input, effect, inject, signal } from '@angular/core';
+import { Component, input, effect, inject, signal, untracked } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { AnalyticsService } from '../../services/analytics.service';
 import { AnalyticsFilters, CountryAnalytics } from '../../models/analytics.models';
@@ -55,9 +55,9 @@ type WidgetState = 'loading' | 'loaded' | 'error' | 'empty';
                     <tr>
                       <td class="font-medium">{{ c.country }}</td>
                       <td class="num">{{ c.employeeCount | number }}</td>
-                      <td class="num">{{ c.averageSalary | currency:c.currency:'symbol':'1.0-0' }}</td>
-                      <td class="num">{{ c.medianSalary | currency:c.currency:'symbol':'1.0-0' }}</td>
-                      <td class="num font-medium">{{ c.totalPayroll | currency:c.currency:'symbol':'1.0-0' }}</td>
+                      <td class="num">{{ c.averageSalary | currency:c.reportingCurrency:'symbol':'1.0-0' }}</td>
+                      <td class="num">{{ c.medianSalary | currency:c.reportingCurrency:'symbol':'1.0-0' }}</td>
+                      <td class="num font-medium">{{ c.totalPayroll | currency:c.reportingCurrency:'symbol':'1.0-0' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -162,7 +162,9 @@ export class CountryAnalysisComponent {
   }
 
   loadData(f: AnalyticsFilters) {
-    this.state.set('loading');
+    if (untracked(() => this.state()) !== 'loaded') {
+      this.state.set('loading');
+    }
     this.analyticsService.getByCountry(f).subscribe({
       next: (res) => {
         if (!res || res.length === 0) {

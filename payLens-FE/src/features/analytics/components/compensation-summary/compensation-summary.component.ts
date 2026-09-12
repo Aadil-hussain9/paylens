@@ -1,4 +1,4 @@
-import { Component, input, effect, inject, signal } from '@angular/core';
+import { Component, input, effect, inject, signal, untracked } from '@angular/core';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { AnalyticsService } from '../../services/analytics.service';
 import { AnalyticsFilters, CompensationSummaryData } from '../../models/analytics.models';
@@ -128,8 +128,9 @@ export class CompensationSummaryComponent {
   }
 
   loadData(f: AnalyticsFilters) {
-    // We use untracked or effect will naturally re-run on filters change
-    this.state.set('loading');
+    if (untracked(() => this.state()) !== 'loaded') {
+      this.state.set('loading');
+    }
     this.analyticsService.getSummary(f).subscribe({
       next: (res) => {
         if (res.totalEmployees === 0) {

@@ -154,6 +154,7 @@ export class EmployeeListComponent implements OnInit {
     search: '',
     country: '',
     department: '',
+    jobTitle: '',
     employmentStatus: '',
     sortBy: 'name',
     sortDirection: 'asc'
@@ -223,6 +224,7 @@ export class EmployeeListComponent implements OnInit {
       search: '',
       country: '',
       department: '',
+      jobTitle: '',
       employmentStatus: '',
       page: 1
     }));

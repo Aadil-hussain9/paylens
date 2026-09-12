@@ -19,12 +19,8 @@ export class CompensationService {
     }
 
     // Simulate backend concurrency/data verification check
-    return this.employeeService.getEmployeeById(id).pipe(
-      switchMap(() => {
-        // If employee exists, apply the update to our mock database
-        this.employeeService._updateEmployeeSalary(id, request.newSalary, request.currency);
-        return of(void 0).pipe(delay(1200)); // Simulate processing delay
-      })
+    return this.employeeService.updateEmployeeSalary(id, request.newSalary, request.currency, request.reason).pipe(
+      switchMap(() => of(void 0))
     );
   }
 }

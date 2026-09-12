@@ -1,4 +1,4 @@
-import { Component, input, effect, inject, signal } from '@angular/core';
+import { Component, input, effect, inject, signal, ViewChild, untracked } from '@angular/core';
 import { AnalyticsService } from '../../services/analytics.service';
 import { AnalyticsFilters, SalaryDistributionBucket } from '../../models/analytics.models';
 import { LoadingStateComponent } from '../../../../shared/components/loading-state/loading-state.component';
@@ -110,6 +110,8 @@ export class SalaryDistributionComponent {
   
   private analyticsService = inject(AnalyticsService);
   
+  @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
+
   state = signal<WidgetState>('loading');
   
   chartData = signal<ChartData<'bar'>>({ datasets: [], labels: [] });
@@ -153,14 +155,16 @@ export class SalaryDistributionComponent {
   }
 
   loadData(f: AnalyticsFilters) {
-    this.state.set('loading');
+    if (untracked(() => this.state()) !== 'loaded') {
+      this.state.set('loading');
+    }
     this.analyticsService.getDistribution(f).subscribe({
       next: (res) => {
         if (!res || res.length === 0) {
           this.state.set('empty');
         } else {
           this.chartData.set({
-            labels: res.map(item => item.rangeLabel),
+            labels: res.map(item => item.range),
             datasets: [
               {
                 data: res.map(item => item.employeeCount),
@@ -171,6 +175,9 @@ export class SalaryDistributionComponent {
             ]
           });
           this.state.set('loaded');
+          setTimeout(() => {
+            this.chart?.update();
+          });
         }
       },
       error: () => {

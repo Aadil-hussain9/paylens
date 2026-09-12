@@ -7,6 +7,7 @@ export interface EmployeeFilterState {
   search?: string;
   country?: string;
   department?: string;
+  jobTitle?: string;
   employmentStatus?: string;
 }
 
@@ -50,6 +51,21 @@ export interface EmployeeFilterState {
           <option value="Finance">Finance</option>
           <option value="Operations">Operations</option>
           <option value="Product">Product</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="jobTitle" class="filter-label">Job Title</label>
+        <select id="jobTitle" class="filter-select" [formControl]="jobTitleControl">
+          <option value="">All Job Titles</option>
+          <option value="Senior Software Engineer">Senior Software Engineer</option>
+          <option value="Software Engineer">Software Engineer</option>
+          <option value="Product Manager">Product Manager</option>
+          <option value="Sales Director">Sales Director</option>
+          <option value="Marketing Specialist">Marketing Specialist</option>
+          <option value="HR Manager">HR Manager</option>
+          <option value="Financial Analyst">Financial Analyst</option>
+          <option value="Operations Manager">Operations Manager</option>
         </select>
       </div>
 
@@ -143,6 +159,7 @@ export class EmployeeFiltersComponent implements OnInit {
   searchControl = new FormControl<string>('');
   countryControl = new FormControl<string>('');
   departmentControl = new FormControl<string>('');
+  jobTitleControl = new FormControl<string>('');
   statusControl = new FormControl<string>('');
 
   private destroyRef = inject(DestroyRef);
@@ -152,9 +169,18 @@ export class EmployeeFiltersComponent implements OnInit {
     if (state.search) this.searchControl.setValue(state.search, { emitEvent: false });
     if (state.country) this.countryControl.setValue(state.country, { emitEvent: false });
     if (state.department) this.departmentControl.setValue(state.department, { emitEvent: false });
+    if (state.jobTitle) this.jobTitleControl.setValue(state.jobTitle, { emitEvent: false });
     if (state.employmentStatus) this.statusControl.setValue(state.employmentStatus, { emitEvent: false });
 
     this.searchControl.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => this.emitChanges());
+
+    this.jobTitleControl.valueChanges
       .pipe(
         debounceTime(300),
         distinctUntilChanged(),
@@ -179,6 +205,7 @@ export class EmployeeFiltersComponent implements OnInit {
     this.searchControl.setValue('', { emitEvent: false });
     this.countryControl.setValue('', { emitEvent: false });
     this.departmentControl.setValue('', { emitEvent: false });
+    this.jobTitleControl.setValue('', { emitEvent: false });
     this.statusControl.setValue('', { emitEvent: false });
     this.emitChanges();
   }
@@ -188,6 +215,7 @@ export class EmployeeFiltersComponent implements OnInit {
       search: this.searchControl.value || undefined,
       country: this.countryControl.value || undefined,
       department: this.departmentControl.value || undefined,
+      jobTitle: this.jobTitleControl.value || undefined,
       employmentStatus: this.statusControl.value || undefined
     });
   }

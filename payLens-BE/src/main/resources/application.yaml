@@ -1,6 +1,14 @@
 spring:
   application:
     name: payLens
+  datasource:
+    url: ${PAYLENS_DATASOURCE_URL:jdbc:postgresql://localhost:5432/paylens}
+    username: ${PAYLENS_DATASOURCE_USERNAME:paylens}
+    password: ${PAYLENS_DATASOURCE_PASSWORD:paylens}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
   jpa:
     open-in-view: false
     hibernate:
@@ -18,6 +26,9 @@ spring:
 paylens:
   analytics:
     reporting-currency: USD
+  web:
+    cors:
+      allowed-origin: ${PAYLENS_WEB_CORS_ALLOWED_ORIGIN:http://localhost:4200}
   employee:
     seed:
       enabled: false

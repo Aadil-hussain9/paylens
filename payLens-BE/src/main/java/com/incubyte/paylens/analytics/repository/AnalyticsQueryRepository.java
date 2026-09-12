@@ -89,6 +89,27 @@ public class AnalyticsQueryRepository {
                         rs.getBigDecimal("median_salary")));
     }
 
+    private static final String RANGE_SQL = ("""
+            SELECT
+                COALESCE(MIN(%1$s), 0)::numeric(19,2) AS min_salary,
+                COALESCE(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY %1$s), 0)::numeric(19,2) AS p25_salary,
+                COALESCE(PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY %1$s), 0)::numeric(19,2) AS median_salary,
+                COALESCE(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY %1$s), 0)::numeric(19,2) AS p75_salary,
+                COALESCE(MAX(%1$s), 0)::numeric(19,2) AS max_salary
+            """ + EMPLOYEE_FX_JOIN + FILTER_CLAUSE).formatted(USD_SALARY);
+
+    public AnalyticsSalaryRangeProjection fetchSalaryRange(AnalyticsFilter filter) {
+        return jdbcTemplate.queryForObject(
+                RANGE_SQL,
+                parameters(filter),
+                (rs, rowNum) -> new AnalyticsSalaryRangeProjection(
+                        rs.getBigDecimal("min_salary"),
+                        rs.getBigDecimal("p25_salary"),
+                        rs.getBigDecimal("median_salary"),
+                        rs.getBigDecimal("p75_salary"),
+                        rs.getBigDecimal("max_salary")));
+    }
+
     public List<SalaryDistributionProjection> fetchSalaryDistribution(AnalyticsFilter filter) {
         return jdbcTemplate.query(
                 DISTRIBUTION_SQL,

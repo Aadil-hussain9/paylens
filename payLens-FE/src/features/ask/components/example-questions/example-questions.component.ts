@@ -57,8 +57,11 @@ export class ExampleQuestionsComponent {
   select = output<string>();
 
   questions = [
-    "What is the average salary in Engineering in India?",
+    "What is the average engineering salary in India?",
     "Which department has the highest payroll?",
-    "Show me potential salary outliers in Engineering."
+    "Are there any salary outliers in Sales?",
+    "What is the median salary in Finance?",
+    "How many employees are in Operations?",
+    "What is the total payroll for HR in Canada?"
   ];
 }

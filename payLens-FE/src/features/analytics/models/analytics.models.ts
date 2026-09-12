@@ -14,7 +14,7 @@ export interface CompensationSummaryData {
 }
 
 export interface SalaryDistributionBucket {
-  rangeLabel: string;
+  range: string;
   employeeCount: number;
 }
 
@@ -24,7 +24,7 @@ export interface DepartmentAnalytics {
   averageSalary: number;
   medianSalary: number;
   totalPayroll: number;
-  currency: string;
+  reportingCurrency: string;
 }
 
 export interface CountryAnalytics {
@@ -33,7 +33,7 @@ export interface CountryAnalytics {
   averageSalary: number;
   medianSalary: number;
   totalPayroll: number;
-  currency: string;
+  reportingCurrency: string;
 }
 
 export interface SalaryRangeAnalytics {

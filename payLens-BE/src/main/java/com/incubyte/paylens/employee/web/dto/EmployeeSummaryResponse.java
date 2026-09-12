@@ -10,7 +10,9 @@ public record EmployeeSummaryResponse(
         String jobTitle,
         String department,
         String country,
-        EmploymentStatus employmentStatus
+        EmploymentStatus employmentStatus,
+        java.math.BigDecimal currentSalary,
+        String currency
 ) {
 }
 

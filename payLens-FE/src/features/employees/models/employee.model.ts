@@ -15,6 +15,7 @@ export interface EmployeeQuery {
   search?: string;
   country?: string;
   department?: string;
+  jobTitle?: string;
   employmentStatus?: string;
   sortBy?: 'name' | 'department' | 'country' | 'salary';
   sortDirection?: 'asc' | 'desc';

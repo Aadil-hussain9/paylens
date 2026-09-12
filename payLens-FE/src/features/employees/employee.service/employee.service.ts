@@ -1,55 +1,37 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { EmployeeDetails } from '../models/employee.models';
 
 @Injectable({ providedIn: 'root' })
 export class EmployeeService {
-  
-  // Mock database
-  private mockEmployees: Record<string, EmployeeDetails> = {
-    '1': {
-      id: '1',
-      employeeNumber: 'EMP-001',
-      firstName: 'John',
-      lastName: 'Doe',
-      jobTitle: 'Senior Software Engineer',
-      department: 'Engineering',
-      country: 'India',
-      employmentStatus: 'Active',
-      currentSalary: 2500000,
-      currency: 'INR'
-    },
-    '2': {
-      id: '2',
-      employeeNumber: 'EMP-002',
-      firstName: 'Jane',
-      lastName: 'Smith',
-      jobTitle: 'Product Manager',
-      department: 'Product',
-      country: 'United States',
-      employmentStatus: 'Active',
-      currentSalary: 140000,
-      currency: 'USD'
-    }
-  };
+  private readonly apiUrl = `${environment.apiUrl}/employees`;
 
-  getEmployeeById(id: string): Observable<EmployeeDetails> {
-    const employee = this.mockEmployees[id];
-    
-    if (!employee) {
-      return throwError(() => new Error('Employee not found')).pipe(delay(500));
-    }
-    
-    // Return a clone to prevent accidental local mutation bypassing the backend
-    return of(JSON.parse(JSON.stringify(employee))).pipe(delay(800));
+  constructor(private http: HttpClient) {}
+
+  getEmployeeById(id: string | number): Observable<EmployeeDetails> {
+    const idStr = String(id);
+    const numericId = idStr.startsWith('EMP-') ? idStr.replace('EMP-', '') : idStr;
+    return this.http.get<EmployeeDetails>(`${this.apiUrl}/${numericId}`);
   }
 
-  // Helper used by CompensationService to mock DB updates
-  _updateEmployeeSalary(id: string, newSalary: number, currency: string): void {
-    if (this.mockEmployees[id]) {
-      this.mockEmployees[id].currentSalary = newSalary;
-      this.mockEmployees[id].currency = currency;
-    }
+  updateEmployeeSalary(id: string | number, newSalary: number, currency: string, reason: string): Observable<EmployeeDetails> {
+    const idStr = String(id);
+    const numericId = idStr.startsWith('EMP-') ? idStr.replace('EMP-', '') : idStr;
+    
+    // Map frontend reason to backend enum if possible
+    let backendReason = 'OTHER';
+    if (reason === 'Annual Review') backendReason = 'ANNUAL_REVIEW';
+    else if (reason === 'Promotion') backendReason = 'PROMOTION';
+    else if (reason === 'Role Change') backendReason = 'ROLE_CHANGE';
+    else if (reason === 'Market Adjustment') backendReason = 'MARKET_ADJUSTMENT';
+    else if (reason === 'Correction') backendReason = 'CORRECTION';
+
+    return this.http.patch<EmployeeDetails>(`${this.apiUrl}/${numericId}/compensation`, {
+      newSalary: newSalary,
+      currency: currency,
+      reason: backendReason
+    });
   }
 }

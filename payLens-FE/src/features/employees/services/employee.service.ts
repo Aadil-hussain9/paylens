@@ -1,132 +1,88 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 import { Employee, EmployeeQuery, PagedResponse } from '../models/employee.model';
 
 @Injectable({ providedIn: 'root' })
 export class EmployeeService {
-  private employees: Employee[] = [];
-  private readonly mockDelay = 400;
+  private readonly apiUrl = `${environment.apiUrl}/employees`;
 
-  constructor() {
-    this.generateMockEmployees();
-  }
+  constructor(private http: HttpClient) {}
 
   getEmployees(query: EmployeeQuery): Observable<PagedResponse<Employee>> {
-    let filtered = this.employees.filter((emp) => {
-      let matches = true;
+    let params = new HttpParams()
+      .set('page', (query.page - 1).toString()) // Backend might be 0-indexed, but let's check BE. BE is 0-indexed (default 0). FE is 1-indexed (default 1).
+      .set('pageSize', query.pageSize.toString());
 
-      if (query.search) {
-        const searchLower = query.search.toLowerCase();
-        const matchesName = emp.name.toLowerCase().includes(searchLower);
-        const matchesId = emp.id.toLowerCase().includes(searchLower);
-        matches = matches && (matchesName || matchesId);
+    if (query.search) {
+      params = params.set('search', query.search);
+    }
+    if (query.country) {
+      params = params.set('country', query.country);
+    }
+    if (query.department) {
+      params = params.set('department', query.department);
+    }
+    if (query.employmentStatus) {
+      let backendStatus = query.employmentStatus;
+      if (backendStatus === 'Active') backendStatus = 'ACTIVE';
+      else if (backendStatus === 'On Leave') backendStatus = 'ON_LEAVE';
+      else if (backendStatus === 'Terminated') backendStatus = 'TERMINATED';
+      params = params.set('employmentStatus', backendStatus);
+    }
+    if (query.jobTitle) {
+      params = params.set('jobTitle', query.jobTitle);
+    }
+    if (query.sortBy) {
+      let backendSortBy: string = query.sortBy;
+      if (query.sortBy === 'name') {
+        backendSortBy = 'firstName';
+      } else if (query.sortBy === 'salary') {
+        backendSortBy = 'currentSalary';
       }
-
-      if (query.country) {
-        matches = matches && emp.country === query.country;
-      }
-
-      if (query.department) {
-        matches = matches && emp.department === query.department;
-      }
-
-      if (query.employmentStatus) {
-        matches = matches && emp.employmentStatus === query.employmentStatus;
-      }
-
-      return matches;
-    });
-
-    if (query.sortBy && query.sortDirection) {
-      filtered.sort((a, b) => {
-        let valA: string | number = a[query.sortBy as keyof Employee];
-        let valB: string | number = b[query.sortBy as keyof Employee];
-
-        if (typeof valA === 'string' && typeof valB === 'string') {
-          return query.sortDirection === 'asc'
-            ? valA.localeCompare(valB)
-            : valB.localeCompare(valA);
-        } else if (typeof valA === 'number' && typeof valB === 'number') {
-          return query.sortDirection === 'asc' ? valA - valB : valB - valA;
-        }
-        return 0;
-      });
+      params = params.set('sortBy', backendSortBy);
+    }
+    if (query.sortDirection) {
+      params = params.set('sortDirection', query.sortDirection);
     }
 
-    const totalElements = filtered.length;
-    const totalPages = Math.ceil(totalElements / query.pageSize);
-    
-    // Ensure requested page is within bounds
-    const currentPage = query.page > totalPages && totalPages > 0 ? totalPages : query.page;
-    
-    const startIndex = (currentPage - 1) * query.pageSize;
-    const endIndex = startIndex + query.pageSize;
-    const content = filtered.slice(startIndex, endIndex);
-
-    const response: PagedResponse<Employee> = {
-      content,
-      page: currentPage,
-      pageSize: query.pageSize,
-      totalElements,
-      totalPages,
-    };
-
-    return of(response).pipe(delay(this.mockDelay));
+    return this.http.get<PagedResponse<any>>(this.apiUrl, { params }).pipe(
+      map(response => {
+        response.content = response.content.map(emp => ({
+          ...emp,
+          name: `${emp.firstName} ${emp.lastName}`,
+          salary: emp.currentSalary
+        }));
+        // Map backend 0-indexed page to frontend 1-indexed page
+        response.page = response.page + 1;
+        return response as PagedResponse<Employee>;
+      })
+    );
   }
 
   getEmployeeById(id: string): Observable<Employee> {
-    const employee = this.employees.find((emp) => emp.id === id);
-    if (!employee) {
-      return new Observable<Employee>((observer) => {
-        setTimeout(() => {
-          observer.error(new Error('Employee not found'));
-        }, this.mockDelay);
-      });
-    }
-    return of(employee).pipe(delay(this.mockDelay));
+    // Note: the backend uses long for ID, but FE uses string (e.g. EMP-10001). 
+    // Wait, let's check what ID the backend expects. If BE expects `long id`, we might need to extract the number.
+    // I will extract just the numeric part if it starts with 'EMP-'.
+    const numericId = id.startsWith('EMP-') ? id.replace('EMP-', '') : id;
+    return this.http.get<Employee>(`${this.apiUrl}/${numericId}`);
   }
 
-  // Internal method to support mock compensation updates
-  _updateEmployeeSalary(id: string, newSalary: number): void {
-    const employee = this.employees.find((emp) => emp.id === id);
-    if (employee) {
-      employee.salary = newSalary;
-    }
-  }
-
-  private generateMockEmployees(): void {
-    const departments = ['Engineering', 'Sales', 'Marketing', 'HR', 'Finance', 'Operations', 'Product'];
-    const countries = ['United States', 'United Kingdom', 'Germany', 'India', 'Canada', 'Australia'];
-    const statuses: Array<'Active' | 'On Leave' | 'Terminated'> = ['Active', 'Active', 'Active', 'On Leave', 'Terminated'];
-    const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen'];
-    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
-
-    for (let i = 1; i <= 10000; i++) {
-      const dept = departments[Math.floor(Math.random() * departments.length)];
-      const country = countries[Math.floor(Math.random() * countries.length)];
-      
-      let baseSalary = 50000;
-      if (dept === 'Engineering') baseSalary += 40000;
-      if (dept === 'Product') baseSalary += 30000;
-      if (country === 'United States') baseSalary += 20000;
-      if (country === 'India') baseSalary -= 30000;
-      
-      const salary = baseSalary + Math.floor(Math.random() * 20000);
-      
-      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-
-      this.employees.push({
-        id: `EMP-${10000 + i}`,
-        name: `${firstName} ${lastName}`,
-        jobTitle: `${dept} Specialist`,
-        department: dept,
-        country: country,
-        salary: salary,
-        currency: country === 'United Kingdom' ? 'GBP' : country === 'Germany' ? 'EUR' : 'USD',
-        employmentStatus: statuses[Math.floor(Math.random() * statuses.length)]
-      });
-    }
+  updateEmployeeSalary(id: string, newSalary: number, currency: string, reason: string): Observable<Employee> {
+    const numericId = id.startsWith('EMP-') ? id.replace('EMP-', '') : id;
+    
+    // Map frontend reason to backend enum if possible
+    let backendReason = 'OTHER';
+    if (reason === 'Annual Review') backendReason = 'ANNUAL_REVIEW';
+    else if (reason === 'Promotion') backendReason = 'PROMOTION';
+    else if (reason === 'Role Change') backendReason = 'ROLE_CHANGE';
+    
+    return this.http.patch<Employee>(`${this.apiUrl}/${numericId}/compensation`, {
+      newSalary: newSalary,
+      currency: currency,
+      reason: backendReason
+    });
   }
 }

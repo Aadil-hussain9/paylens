@@ -45,6 +45,15 @@ public class AnalyticsController {
         return analyticsService.getSalaryDistribution(buildFilter(country, department, role, jobTitle));
     }
 
+    @GetMapping("/salary-ranges")
+    public com.incubyte.paylens.analytics.web.dto.SalaryRangeResponse getSalaryRanges(
+            @RequestParam(required = false) String country,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String jobTitle) {
+        return analyticsService.getSalaryRange(buildFilter(country, department, role, jobTitle));
+    }
+
     @GetMapping("/by-country")
     public List<CountryAnalyticsResponse> getByCountry(
             @RequestParam(required = false) String country,

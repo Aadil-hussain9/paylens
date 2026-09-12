@@ -140,210 +140,217 @@ Each endpoint returns per-group:
 ## 1. Product scope (MVP)
 
 **In scope**
-- Base salary only, stored in the employee's **native local currency**.
-- CRUD-lite management of employees and their **current** base salary (update in place).
-- Server-side **list APIs** with pagination, filtering, and sorting for 10,000 employees.
-- **Analytics** answering "how does the org pay people":
-  - Total payroll spend (normalized to a reporting currency, USD).
-  - Headcount.
-  - **Average** and **median** salary.
-  - Breakdowns / group-bys by **country**, **department**, and **role**.
-- Deterministic **seed** of exactly 10,000 employees and a **static FX table**.
-- Clean layered architecture, unit + slice tests, OpenAPI docs.
+- Base salary only, stored in the employee's **native currency**.
+- Current salary only — updates mutate the existing employee record in place.
+- Server-side pagination, filtering, sorting, and search for the employee list.
+- PostgreSQL-backed analytics for total payroll, average salary, median salary, salary distribution, and breakdowns by country / department / role.
+- Deterministic seed data for exactly **10,000 employees** plus static FX rates.
+- Consistent JSON DTOs and a single shared error contract for Angular integration.
 
-**Explicitly out of scope (deferred to future phases)**
-- Bonuses, equity, allowances, CTC breakdowns.
-- Effective-dated salary history / revision log (only current salary is stored).
-- Live FX API integration — FX rates are static/seeded.
-- Authentication, SSO, RBAC, audit logging, PII masking.
-- Multi-tenant support.
-- Natural-language / AI querying inside the product (AI is used in dev workflow only).
-- Microservices, message brokers, caching layers, or any infra beyond a single relational DB.
-- Frontend concerns (documented in the UI project).
-
-**Trade-offs**
-- Storing only the current salary keeps the schema simple and the analytics queries cheap; historical trending is intentionally deferred.
-- Static FX rates make analytics deterministic and testable; production would require a rates service and effective-dated FX.
-- Single HR manager persona removes AuthN/AuthZ complexity so the assessment focus stays on domain, performance, and testing.
+**Explicitly out of scope**
+- Salary history, audit logging, bonuses, equity, and approval workflows.
+- Authentication, RBAC, SSO, OAuth, JWT, or permission systems.
+- Live FX feeds, caching, Redis, Elasticsearch, Kafka, microservices, or CQRS.
+- In-product AI querying.
 
 ---
 
 ## 2. Architecture
 
-**Style:** Modular monolith, layered per feature.
+**Style:** feature-oriented modular monolith with classic layering.
 
-```
-Controller  →  Service  →  Repository  →  Domain (JPA entity)
-    ▲              ▲              ▲
-    │              │              │
-   DTO         Domain model    Spring Data JPA
+```text
+Controller
+    ↓
+Service
+    ↓
+Repository / Query
+    ↓
+PostgreSQL
 ```
 
-**Modules (packages under `com.incubyte.paylens`):**
-- `employee` — employee CRUD, list/search, current-salary update.
-- `analytics` — payroll KPIs and group-by breakdowns; all aggregations run in the database.
-- `currency` — static FX rate table + a `CurrencyConverter` used by analytics to normalize to USD.
-- `catalog` — reference data: countries, departments, roles (kept as first-class entities so filters and analytics are index-friendly).
-- `common` — shared DTOs, error model, pagination helpers, base exceptions.
-- `config` — Spring configuration (OpenAPI, Jackson, etc.).
-- `seed` — one-shot deterministic data loader for 10,000 employees + FX rates.
+**Current packages under `com.incubyte.paylens`:**
+- `common` — shared API DTOs and exception handling.
+- `config` — framework configuration (`WebConfig` for CORS).
+- `employee` — `Employee` entity, repository/specifications, read service, compensation update service, deterministic seed runner, REST DTOs and controller.
+- `currency` — seeded `FxRate` entity/repository and `CurrencyConverter`.
+- `analytics` — REST/controller DTOs, read-only service, JDBC/native SQL query repository.
 
 **Runtime characteristics**
-- Single Spring Boot process (`PayLensApplication`).
+- Single Spring Boot application.
 - Servlet stack (`spring-boot-starter-webmvc`).
-- Relational DB via Spring Data JPA; profiles: `dev` (PostgreSQL on localhost/Docker), `test` (PostgreSQL on Docker Compose), `prod` (PostgreSQL with env-provided credentials), `docker` (PostgreSQL in Docker network).
+- PostgreSQL in all environments.
+- Flyway-managed schema in dev, test, docker, and prod.
 
 ---
 
-## 3. Domain model
+## 3. Current data model
 
-Minimal entities aligned to the confirmed scope:
+**Employee**
+- `id`
+- `version` (`@Version` optimistic locking)
+- `employeeNumber`
+- `firstName`
+- `lastName`
+- `jobTitle`
+- `department`
+- `country`
+- `employmentStatus`
+- `currentSalary` (`BigDecimal` / `DECIMAL(19,2)`)
+- `currency` (`CHAR(3)`, FK to `fx_rate.currency`)
 
-- **Country** `{ id, isoCode (unique), name, currencyCode }`
-- **Department** `{ id, code (unique), name }`
-- **Role** `{ id, code (unique), title }`
-- **Employee**
-  - `id`, `employeeCode` (unique, deterministic)
-  - `firstName`, `lastName`, `email` (unique)
-  - `countryId`, `departmentId`, `roleId` (FKs)
-  - `baseSalaryAmount` (`DECIMAL(15,2)`, non-null)
-  - `baseSalaryCurrency` (`CHAR(3)`, ISO 4217, non-null; usually equals `Country.currencyCode`)
-  - `hireDate`
-  - `createdAt`, `updatedAt`, `version` (`@Version` for optimistic locking)
-- **FxRate** `{ id, currencyCode (unique), rateToUsd (DECIMAL(18,8)), asOfDate }`
+**FxRate**
+- `id`
+- `currency` (`CHAR(3)`, unique)
+- `rateToUsd` (`BigDecimal` / `DECIMAL(10,6)`)
 
-Notes:
-- No `SalaryHistory` table. Salary updates mutate `Employee` in place.
-- Money is `BigDecimal` end-to-end. No `double` for money.
-- Country/Department/Role kept as tables (not enums) so analytics group-bys are FK-driven and indexable, and reference data is easy to seed.
-
----
-
-## 4. Database schema & indexing
-
-Indexes required for scale at 10k rows and realistic filter combos:
-- `employee (country_id)`
-- `employee (department_id)`
-- `employee (role_id)`
-- `employee (country_id, department_id)` composite (common analytics/filter combo)
-- `employee (last_name, first_name)` for name search/sort
-- Unique: `employee.email`, `employee.employee_code`, `country.iso_code`, `department.code`, `role.code`, `fx_rate.currency_code`.
-
-Schema is managed by **Flyway** migrations under `src/main/resources/db/migration`.
+**Important scope decisions**
+- No salary history table.
+- No department/country/role reference tables.
+- Analytics normalise employee-native salaries to **USD** at query time.
 
 ---
 
-## 5. REST API surface
+## 4. Database
 
-Base path: `/api/v1`.
+Schema is managed by Flyway under `src/main/resources/db/migration`:
 
-**Employees**
-- `GET  /employees` — paginated, filterable, sortable list.
-  - Query params: `page`, `size`, `sort` (Spring style, e.g. `sort=lastName,asc`), `countryId`, `departmentId`, `roleId`, `q` (matches name/email/employeeCode).
-- `GET  /employees/{id}` — fetch one.
-- `POST /employees` — create.
-- `PUT  /employees/{id}` — update non-salary attributes.
-- `PATCH /employees/{id}/salary` — update **current** base salary
-  - Body: `{ "amount": "125000.00", "currency": "INR" }`
-  - Uses `@Version` optimistic locking; returns `409` on stale update.
-- `DELETE /employees/{id}` — delete.
+- `V1__create_employee_table.sql`
+- `V2__create_fx_rate_table.sql`
+- `V3__add_employee_version_column.sql`
+- `V4__add_employee_currency_fk.sql`
 
-**Analytics** (all totals normalized to USD via seeded FX)
-- `GET /analytics/summary` — `{ headcount, totalPayrollUsd, averageSalaryUsd, medianSalaryUsd }`.
-- `GET /analytics/by-country` — grouped rows: `{ countryId, isoCode, headcount, totalUsd, averageUsd, medianUsd }`.
-- `GET /analytics/by-department` — same shape, grouped by department.
-- `GET /analytics/by-role` — same shape, grouped by role.
-- Optional filters mirror the employees list (`countryId`, `departmentId`, `roleId`).
+Key indexes currently present:
+- `employee(employee_number)` unique
+- `employee(country)`
+- `employee(department)`
+- `employee(job_title)`
+- `employee(employment_status)`
+- `employee(last_name, first_name)`
+- `fx_rate(currency)` unique
 
-**Reference data**
-- `GET /countries`, `GET /departments`, `GET /roles` — small, un-paginated lists used by UI filters.
+---
+
+## 5. API overview
+
+Base path: `/api`
+
+### Employees
+- `GET /api/employees`
+- `GET /api/employees/{id}`
+
+### Compensation
+- `PATCH /api/employees/{id}/compensation`
+
+### Analytics
+- `GET /api/analytics/summary`
+- `GET /api/analytics/salary-distribution`
+- `GET /api/analytics/by-country`
+- `GET /api/analytics/by-department`
+- `GET /api/analytics/by-role`
+
+See [`docs/api-contract.md`](docs/api-contract.md) for the exact Angular-facing contract: parameters, request/response DTOs, examples, and status codes.
 
 **Conventions**
-- Requests/responses use DTOs (never expose entities).
-- Errors return a consistent problem body: `{ timestamp, status, error, code, message, details[] }`.
-- All list endpoints are paginated. Max `size` is 200.
+- All responses use explicit DTOs; JPA entities are never exposed.
+- Monetary values stay as JSON numbers backed by `BigDecimal`.
+- Error responses use `ApiError`:
+  `{ timestamp, status, error, code, message, details[] }`.
+- Employee list pagination uses `PageResponse<T>`:
+  `{ content, page, pageSize, totalElements, totalPages }`.
 
 ---
 
-## 6. Cross-cutting requirements
+## 6. Validation, errors, and CORS
 
-- **Validation:** `jakarta.validation` on DTOs (`@NotBlank`, `@Email`, `@NotNull`, `@Positive`, `@Size`), ISO codes validated with custom `@Iso4217` / `@IsoCountry` constraints where relevant.
-- **Exception handling:** single `@RestControllerAdvice` maps domain exceptions (`NotFoundException`, `ConflictException`, `ValidationException`) and `OptimisticLockingFailureException` to the problem body.
-- **Transactions:** service methods that write are `@Transactional`; reads are `@Transactional(readOnly = true)`. Controllers never open transactions.
-- **Concurrency:** `@Version` on `Employee`. Salary PATCH translates JPA optimistic failure to HTTP 409.
-- **Currency conversion:** `CurrencyConverter` looks up `FxRate.rateToUsd`; missing rate → `ConflictException`. Rounding: `HALF_UP` to 2 decimal places for reporting.
-- **Analytics performance:** aggregations (`SUM`, `AVG`, headcount, median) are computed in the database with JPQL/native queries. Median uses PostgreSQL-native SQL patterns (for example `PERCENTILE_CONT`) to keep logic deterministic and DB-driven.
-- **Pagination:** Spring `Pageable`; responses use `Page<T>` mapped to `{ content, page, size, totalElements, totalPages }`.
+- `UpdateCompensationRequest` uses Bean Validation:
+  - `newSalary` required and `> 0`
+  - `currency` required
+  - `reason` required
+- `Employee id`, `page`, `pageSize`, `sortBy`, and `sortDirection` are validated at the controller/service boundary.
+- `GlobalExceptionHandler` maps:
+  - `400 BAD_REQUEST`
+  - `404 NOT_FOUND`
+  - `409 CONFLICT`
+  - `500 INTERNAL_SERVER_ERROR`
+- Validation errors are returned in a predictable `details[]` list such as:
+  - `currency: currency is required`
+  - `newSalary: newSalary must be greater than zero`
+- CORS is enabled only for `/api/**` and only for the configured origin:
+  - property: `paylens.web.cors.allowed-origin`
+  - default: `http://localhost:4200`
+
+**OpenAPI status**
+- Swagger / OpenAPI is **not currently configured** in this backend.
+- The supported contract is documented in [`docs/api-contract.md`](docs/api-contract.md).
 
 ---
 
-## 7. Seeding
+## 7. Seed data
 
-- Component `SeedRunner` (activated by `paylens.seed.enabled=true`) inserts:
-  - Reference data: ~15 countries, ~8 departments, ~12 roles.
-  - Static FX rates keyed to USD.
-  - Exactly **10,000 employees** using a **fixed random seed** for determinism.
-- Salary bands are derived per (country, role) so analytics produce meaningful variance.
-- Seeding is idempotent: it no-ops if `employee` count ≥ 10,000.
+- `EmployeeSeedRunner` is activated by `paylens.employee.seed.enabled=true`.
+- Generates exactly **10,000 employees** with fixed `Random(42L)` determinism.
+- Idempotent: if employees already exist, it does nothing.
+- FX rates are seeded by Flyway `V2`, not by runtime code.
 
 ---
 
 ## 8. Testing strategy
 
-- **Unit tests (JUnit 5 + Mockito):** services, converters, mappers, validators.
-- **Repository slice tests (`@DataJpaTest`):** custom queries, index-touching filters, median.
-- **Web slice tests (`@WebMvcTest`):** controller contract, validation errors, error mapping.
-- **Focused integration test (`@SpringBootTest`):** seed → list → analytics happy path on PostgreSQL.
-- Tests must be fast (< 30s total), deterministic, and independent (no shared mutable state).
+- **Unit tests:** `EmployeeServiceTest`, `CompensationServiceTest`, `AnalyticsServiceTest`, `CurrencyConverterTest`.
+- **API/controller tests:** `EmployeeControllerTest`, `EmployeeCompensationApiIntegrationTest`, `AnalyticsControllerIntegrationTest`.
+- **Repository/database tests:** `EmployeeRepositoryTest`, `EmployeeConstraintsTest`, `FxRateRepositoryTest`, `AnalyticsQueryRepositoryTest`.
+- **Seed/integration tests:** `EmployeeSeedRunnerTest`, `SeedDataIntegrityTest`.
+- Tests use **Testcontainers PostgreSQL 17** + Flyway migrations + `ddl-auto=validate` for schema parity.
 
 ---
 
-## 9. Build, run, and workflows
+## 9. Running the backend
 
-Requires JDK 21. Uses the Gradle wrapper.
+Requires JDK 21.
 
 ```bash
-./gradlew test          # run all tests
-./gradlew build         # compile + test + package
-./gradlew bootRun       # start the app on :8080
+cd /Users/dbzpxuw/Documents/personal/payLens-project/payLens-BE
+docker-compose up -d
+
+export SPRING_PROFILES_ACTIVE=dev
+export PAYLENS_DATASOURCE_URL=jdbc:postgresql://localhost:5432/paylens
+export PAYLENS_DATASOURCE_USERNAME=paylens
+export PAYLENS_DATASOURCE_PASSWORD=paylens
+./gradlew bootRun
 ```
 
-Profiles:
+Run with deterministic seed data:
+
 ```bash
-SPRING_PROFILES_ACTIVE=dev    ./gradlew bootRun  # PostgreSQL (local/Docker)
-SPRING_PROFILES_ACTIVE=test   ./gradlew test     # PostgreSQL via Docker Compose
-SPRING_PROFILES_ACTIVE=prod   ./gradlew bootRun  # PostgreSQL (prod env vars required)
-SPRING_PROFILES_ACTIVE=docker ./gradlew bootRun  # PostgreSQL in Docker network
-```
+cd /Users/dbzpxuw/Documents/personal/payLens-project/payLens-BE
+docker-compose up -d
 
-Key endpoints when running locally:
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
-- PostgreSQL inspection via `psql` or `docker-compose logs -f postgres`
+export SPRING_PROFILES_ACTIVE=dev
+export PAYLENS_DATASOURCE_URL=jdbc:postgresql://localhost:5432/paylens
+export PAYLENS_DATASOURCE_USERNAME=paylens
+export PAYLENS_DATASOURCE_PASSWORD=paylens
+export PAYLENS_EMPLOYEE_SEED_ENABLED=true
+./gradlew bootRun
+```
 
 ---
 
-## 10. Repository layout (target)
+## 10. Tests and API documentation
 
-```
-src/main/java/com/incubyte/paylens/
-├── PayLensApplication.java
-├── common/           # error model, pagination, base exceptions
-├── config/           # OpenAPI, Jackson, web config
-├── catalog/          # Country, Department, Role (entity + repo + controller)
-├── currency/         # FxRate entity/repo + CurrencyConverter
-├── employee/         # Employee entity, repo, service, controller, DTOs, mapper
-├── analytics/        # Analytics service + controller + DB-side queries
-└── seed/             # SeedRunner + deterministic data providers
+Run the full backend test suite:
 
-src/main/resources/
-├── application.yaml
-├── application-dev.yaml
-├── application-docker.yaml
-├── application-prod.yaml
-├── application-test.yaml
-└── db/migration/     # Flyway V1__init.sql, V2__seed_reference.sql, ...
+```bash
+cd /Users/dbzpxuw/Documents/personal/payLens-project/payLens-BE
+./gradlew test
+./gradlew build
 ```
+
+Developer-facing API documentation:
+- Contract guide: [`docs/api-contract.md`](docs/api-contract.md)
+- ADRs: [`docs/architecture-decisions.md`](docs/architecture-decisions.md)
+
+There is currently **no generated Swagger/OpenAPI UI** in this project.
 
 ---
 
@@ -676,7 +683,7 @@ If you want to test against a real PostgreSQL instance locally:
 Requires **JDK 21**. Uses Gradle wrapper.
 
 ```bash
-# Compile and test (uses PostgreSQL from Docker Compose)
+# Compile and test (uses PostgreSQL via Testcontainers)
 ./gradlew test
 
 # Build JAR
@@ -699,8 +706,7 @@ export PAYLENS_EMPLOYEE_SEED_ENABLED=true
 
 **Key endpoints when running locally:**
 - **API**: http://localhost:8080/api/employees
-- **Swagger UI**: http://localhost:8080/swagger-ui.html
-- **OpenAPI JSON**: http://localhost:8080/v3/api-docs
+- **API contract**: `docs/api-contract.md`
 - **PostgreSQL logs**: `docker-compose logs -f postgres`
 
 ---
@@ -751,7 +757,7 @@ export PAYLENS_EMPLOYEE_SEED_ENABLED=true
 - PostgreSQL on `localhost:5432`
 - Flyway migrations run automatically
 - DEBUG logging for troubleshooting
-- Smaller connection pool (5 max)
+- Connection pool max size `10`
 - SQL formatting enabled for readability
 
 #### Test
@@ -766,8 +772,9 @@ export SPRING_PROFILES_ACTIVE=test
 ```
 
 **Test profile features:**
-- PostgreSQL at `localhost:5432` (Docker Compose)
-- `ddl-auto: create-drop` for isolated schema lifecycle per context
+- PostgreSQL via **Testcontainers** (`jdbc:tc:postgresql:17-alpine:///paylens`)
+- Flyway migrations run before Hibernate validation
+- `ddl-auto: validate` to catch schema drift against the real migrations
 - WARN logging (minimal noise)
 - No H2 and no in-memory DB behavior drift
 
@@ -977,7 +984,7 @@ curl http://localhost:8080/api/employees?page=0&pageSize=10
 **Scenario: Running tests**
 
 ```bash
-# Tests automatically use test profile (PostgreSQL Docker Compose)
+# Tests automatically use the test profile (PostgreSQL via Testcontainers)
 ./gradlew test
 
 # Run single test class

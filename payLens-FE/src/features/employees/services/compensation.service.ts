@@ -101,20 +101,19 @@ export class CompensationService {
           changedBy: 'HR Manager' // Mocked user
         };
 
-        // Ensure history exists in cache
-        if (!this.historyCache.has(request.employeeId)) {
-           // Should ideally be populated by a previous get, but fallback just in case
-           this.historyCache.set(request.employeeId, []); 
-        }
-        
-        // Add to front of history
-        const currentHistory = this.historyCache.get(request.employeeId)!;
-        this.historyCache.set(request.employeeId, [newEntry, ...currentHistory]);
-
-        // Update authoritative employee record
-        this.employeeService._updateEmployeeSalary(request.employeeId, request.newSalary);
-
-        return of(void 0).pipe(delay(this.mockDelay));
+        // Update authoritative employee record via BE
+        return this.employeeService.updateEmployeeSalary(request.employeeId, request.newSalary, request.currency, request.reason).pipe(
+          switchMap(() => {
+            // Update history cache locally just to mimic fast updates if needed,
+            // or rely on a new BE endpoint if one exists.
+            if (!this.historyCache.has(request.employeeId)) {
+               this.historyCache.set(request.employeeId, []); 
+            }
+            const currentHistory = this.historyCache.get(request.employeeId)!;
+            this.historyCache.set(request.employeeId, [newEntry, ...currentHistory]);
+            return of(void 0).pipe(delay(this.mockDelay));
+          })
+        );
       })
     );
   }

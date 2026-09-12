@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="BackgroundAgentGlobalSettings">
+    <option name="selectedModelId" value="auto" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="cb586ca4-bdb0-4e46-9351-202f9a426da4" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/payLens-BE/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-BE/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payLens-BE/src/main/java/com/incubyte/paylens/common/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-BE/src/main/java/com/incubyte/paylens/common/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payLens-BE/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-BE/src/main/resources/application.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payLens-FE/angular.json" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-FE/angular.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payLens-FE/src/features/analytics/services/analytics.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-FE/src/features/analytics/services/analytics.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payLens-FE/src/features/compensation/compensation.service/compensation.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-FE/src/features/compensation/compensation.service/compensation.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payLens-FE/src/features/employees/employee.service/employee.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-FE/src/features/employees/employee.service/employee.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payLens-FE/src/features/employees/services/compensation.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-FE/src/features/employees/services/compensation.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payLens-FE/src/features/employees/services/employee.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-FE/src/features/employees/services/employee.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payLens-FE/src/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/payLens-FE/src/main.ts" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_/Users/dbzpxuw/Documents/personal/payLens-project" value="3Ix8IC97C8PuFduAypYlRl1izuu" />
+    </persistenceIdMap>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Aadil-Dar&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Aadil-hussain9/paylens.git&quot;,
+    &quot;accountId&quot;: &quot;ee13cbbf-a704-44ac-9950-599b44dc5770&quot;
+  }
+}</component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.3172468500961045" />
+      <entry key="MS500" value="2.6924702939941634" />
+      <entry key="S2" value="6.678710199390633" />
+      <entry key="S5" value="11.43679376286301" />
+      <entry key="S10" value="15.355414278486164" />
+      <entry key="S30" value="22.096704567608523" />
+      <entry key="S60" value="25.66628190804844" />
+      <entry key="M2" value="28.055450066462978" />
+      <entry key="M5" value="29.746413229388658" />
+      <entry key="M10" value="30.359728020935723" />
+      <entry key="M15" value="30.570090192924916" />
+      <entry key="M30" value="30.78349718276493" />
+      <entry key="H1" value="30.89135839059168" />
+      <entry key="H2" value="30.945581239275132" />
+      <entry key="H4" value="30.97276607971408" />
+      <entry key="D1" value="30.995457600632303" />
+      <entry key="W1" value="30.999351002172908" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="8.445614355665436E-25" />
+      <entry key="MS500" value="1.5322380725692333E-5" />
+      <entry key="S2" value="0.06256501634174098" />
+      <entry key="S5" value="0.33001419820366057" />
+      <entry key="S10" value="0.5744686224709411" />
+      <entry key="S30" value="0.8312955151600963" />
+      <entry key="S60" value="0.9117540869993924" />
+      <entry key="M2" value="0.9548581501979192" />
+      <entry key="M5" value="0.9816926597981646" />
+      <entry key="M10" value="0.9908040471244379" />
+      <entry key="M15" value="0.9938599299672023" />
+      <entry key="M30" value="0.9969252379026234" />
+      <entry key="H1" value="0.998461435360737" />
+      <entry key="H2" value="0.9992304215548765" />
+      <entry key="H4" value="0.9996151367175653" />
+      <entry key="D1" value="0.9999358458310805" />
+      <entry key="W1" value="0.9999908348667309" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="1.2790934687326372" />
+      <entry key="MS500" value="2.6745457710972076" />
+      <entry key="S2" value="6.704397887269168" />
+      <entry key="S5" value="11.69917480915137" />
+      <entry key="S10" value="15.870179718222268" />
+      <entry key="S30" value="22.89824963089182" />
+      <entry key="S60" value="26.561469275271772" />
+      <entry key="M2" value="29.001549537577887" />
+      <entry key="M5" value="30.724480336295258" />
+      <entry key="M10" value="31.34869821147437" />
+      <entry key="M15" value="31.562722810419857" />
+      <entry key="M30" value="31.779806379222865" />
+      <entry key="H1" value="31.889511206183492" />
+      <entry key="H2" value="31.94465720083858" />
+      <entry key="H4" value="31.972303948865907" />
+      <entry key="D1" value="31.995380563314036" />
+      <entry key="W1" value="31.999339996461792" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3Ix7q3nW4b94frX0KEDvpbFsznt" />
+  <component name="ProjectSessionTemplates">
+    <option name="panelTemplate">
+      <template>
+        <option name="modeId" value="Agent" />
+        <option name="model">
+          <model>
+            <option name="modelType" value="builtin_id" />
+            <option name="modelValue" value="auto" />
+          </model>
+        </option>
+        <option name="targetType" value="LOCAL" />
+      </template>
+    </option>
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Docker.payLens-BE.postgres: Compose Deployment.executor": "Run",
+    "Docker.payLens-BE: Compose Deployment.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "copilot.chat.legacySessionMetadata.migrated": "true",
+    "git-widget-placeholder": "master",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/dbzpxuw/Documents/personal/payLens-project",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "/Users/dbzpxuw/Documents/personal/payLens-project/payLens-FE/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager" selected="Docker.payLens-BE.postgres: Compose Deployment">
+    <configuration default="true" type="docker-deploy" factoryName="docker-compose.yml" temporary="true">
+      <deployment type="docker-compose.yml">
+        <settings />
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration name="payLens-BE: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="sourceFilePath" value="payLens-BE/docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration name="payLens-BE.postgres: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="services">
+            <list>
+              <option value="postgres" />
+            </list>
+          </option>
+          <option name="sourceFilePath" value="payLens-BE/docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Docker.payLens-BE.postgres: Compose Deployment" />
+        <item itemvalue="Docker.payLens-BE: Compose Deployment" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-37e91769500f-intellij.indexing.shared.core-IU-261.27258.48" />
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-IU-261.27258.48" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="cb586ca4-bdb0-4e46-9351-202f9a426da4" name="Changes" comment="" />
+      <created>1788694552602</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1788694552602</updated>
+      <workItem from="1788694553669" duration="11355000" />
+      <workItem from="1788754959077" duration="5128000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

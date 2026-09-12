@@ -40,6 +40,17 @@ public class AnalyticsService {
                 reportingCurrency);
     }
 
+    public com.incubyte.paylens.analytics.web.dto.SalaryRangeResponse getSalaryRange(AnalyticsFilter filter) {
+        com.incubyte.paylens.analytics.repository.AnalyticsSalaryRangeProjection result = analyticsQueryRepository.fetchSalaryRange(filter);
+        return new com.incubyte.paylens.analytics.web.dto.SalaryRangeResponse(
+                result.minSalary(),
+                result.p25Salary(),
+                result.medianSalary(),
+                result.p75Salary(),
+                result.maxSalary(),
+                reportingCurrency);
+    }
+
     public List<SalaryDistributionResponse> getSalaryDistribution(AnalyticsFilter filter) {
         return analyticsQueryRepository.fetchSalaryDistribution(filter).stream()
                 .map(row -> new SalaryDistributionResponse(row.range(), row.employeeCount()))

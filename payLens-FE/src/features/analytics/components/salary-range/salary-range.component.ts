@@ -1,4 +1,4 @@
-import { Component, input, effect, inject, signal } from '@angular/core';
+import { Component, input, effect, inject, signal, untracked } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { AnalyticsService } from '../../services/analytics.service';
 import { AnalyticsFilters, SalaryRangeAnalytics } from '../../models/analytics.models';
@@ -165,7 +165,9 @@ export class SalaryRangeComponent {
   }
 
   loadData(f: AnalyticsFilters) {
-    this.state.set('loading');
+    if (untracked(() => this.state()) !== 'loaded') {
+      this.state.set('loading');
+    }
     this.analyticsService.getSalaryRanges(f).subscribe({
       next: (res) => {
         if (!res || res.min === 0) {

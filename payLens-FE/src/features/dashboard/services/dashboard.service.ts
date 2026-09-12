@@ -1,14 +1,16 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { DashboardData } from '../models/dashboard.model';
-import { MOCK_DASHBOARD_DATA } from '../data/mock-dashboard-data';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
-  private readonly mockDelay = 600;
+  private readonly apiUrl = `${environment.apiUrl}/dashboard`;
+
+  constructor(private http: HttpClient) {}
 
   getDashboardData(): Observable<DashboardData> {
-    return of(MOCK_DASHBOARD_DATA).pipe(delay(this.mockDelay));
+    return this.http.get<DashboardData>(this.apiUrl);
   }
 }

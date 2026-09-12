@@ -38,6 +38,21 @@ import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
         </div>
 
         <div class="form-group">
+          <label for="role">Job Title</label>
+          <select id="role" formControlName="role" class="form-control">
+            <option value="">All Job Titles</option>
+            <option value="Senior Software Engineer">Senior Software Engineer</option>
+            <option value="Software Engineer">Software Engineer</option>
+            <option value="Product Manager">Product Manager</option>
+            <option value="Sales Director">Sales Director</option>
+            <option value="Marketing Specialist">Marketing Specialist</option>
+            <option value="HR Manager">HR Manager</option>
+            <option value="Financial Analyst">Financial Analyst</option>
+            <option value="Operations Manager">Operations Manager</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label for="employmentStatus">Status</label>
           <select id="employmentStatus" formControlName="employmentStatus" class="form-control">
             <option value="">All Statuses</option>
@@ -131,6 +146,7 @@ export class AnalyticsFiltersComponent implements OnInit, OnDestroy {
     this.filterForm = this.fb.group({
       country: [''],
       department: [''],
+      role: [''],
       employmentStatus: ['']
     });
   }
@@ -146,6 +162,7 @@ export class AnalyticsFiltersComponent implements OnInit, OnDestroy {
         const cleaned: AnalyticsFilters = {};
         if (value.country) cleaned.country = value.country;
         if (value.department) cleaned.department = value.department;
+        if (value.role) cleaned.role = value.role;
         if (value.employmentStatus) cleaned.employmentStatus = value.employmentStatus;
         
         this.filtersChanged.emit(cleaned);
@@ -161,12 +178,13 @@ export class AnalyticsFiltersComponent implements OnInit, OnDestroy {
     this.filterForm.reset({
       country: '',
       department: '',
+      role: '',
       employmentStatus: ''
     });
   }
 
   isFiltered(): boolean {
     const vals = this.filterForm.value;
-    return !!(vals.country || vals.department || vals.employmentStatus);
+    return !!(vals.country || vals.department || vals.role || vals.employmentStatus);
   }
 }
