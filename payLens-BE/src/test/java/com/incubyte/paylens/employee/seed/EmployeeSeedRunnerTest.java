@@ -2,6 +2,7 @@ package com.incubyte.paylens.employee.seed;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +16,17 @@ class EmployeeSeedRunnerTest {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private EmployeeSeedRunner seedRunner;
+
+    @BeforeEach
+    void ensureSeeded() throws Exception {
+        if (employeeRepository.count() != 10_000) {
+            employeeRepository.deleteAll();
+            seedRunner.run();
+        }
+    }
 
     @Test
     void shouldSeedExactlyTenThousandEmployeesDeterministically() {

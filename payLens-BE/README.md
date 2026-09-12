@@ -6,6 +6,21 @@ This document is the **source of truth for backend scope, architecture, and conv
 
 ---
 
+## MVP trade-offs at a glance
+
+| Concern | Decision | Rationale |
+|---|---|---|
+| **Salary storage** | Current salary only, in the **employee's native currency** | Assessment defers salary history / effective-dated revisions. `Employee` mutates in place. |
+| **Reporting currency** | Analytics normalise to **USD** using deterministic seeded FX rates | Static `fx_rate` table (Flyway `V2`), never updated at runtime. |
+| **`UpdateCompensationRequest.reason`** | Accepted in the API contract but **not persisted** | Salary audit / history is intentionally out of scope for the MVP. Keeping the field in the contract makes it an additive change to introduce an audit table later. |
+| **Authentication / RBAC / SSO** | **Out of scope for the MVP.** The backend assumes an already-authorised HR Manager persona. Adding Spring Security in front of the current controllers is a bolt-on change that requires **no controller / service / DTO rewrite**. | Assessment explicitly allows this. |
+| **In-product AI (NLQ / embeddings)** | **Not built.** AI-assisted development is documented but the product surface exposes only structured analytics endpoints. | Assessment marks AI as optional. |
+| **Infrastructure** | Single Spring Boot process + PostgreSQL. **No Redis, Kafka, Elasticsearch, or microservices.** | Nothing at 10k rows justifies extra infra. |
+
+See [`docs/architecture-decisions.md`](docs/architecture-decisions.md) for the full ADR log.
+
+---
+
 ## Analytics / Compensation Insights API
 
 Base path:
@@ -457,7 +472,10 @@ CREATE UNIQUE INDEX idx_fx_rate_currency ON fx_rate (currency);
 Migrations are version-controlled SQL files in `src/main/resources/db/migration/`:
 
 - **V1__create_employee_table.sql** — Initial employee schema with indexes and constraints
-- **V2__create_fx_rate_table.sql** — FX rate table with seed data
+- **V2__create_fx_rate_table.sql** — FX rate table with 8 seeded currencies
+- **V3__add_employee_version_column.sql** — `@Version` column for optimistic locking
+- **V4__add_employee_currency_fk.sql** — FK from `employee.currency` → `fx_rate.currency`
+  (belt-and-braces guarantee that no employee can be inserted with a currency that has no FX rate)
 
 **Idempotent application startup:**
 1. Flyway automatically discovers migrations
@@ -581,32 +599,37 @@ Tests verify seeded data quality:
 
 ### Test Database Strategy
 
-Tests use **PostgreSQL from Docker Compose** (same engine as development):
+Repository, analytics, and integration tests run against a **real PostgreSQL 17 instance provisioned automatically by [Testcontainers](https://testcontainers.com/)** — no developer needs to start Postgres manually before `./gradlew test`.
 
 **Configuration** (`src/test/resources/application.yaml`):
 ```yaml
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/paylens
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:tc:postgresql:17-alpine:///paylens   # Testcontainers "tc:" scheme
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate                            # NOT create-drop: mappings must match Flyway
   flyway:
-    enabled: false
+    enabled: true
+    locations: classpath:db/migration
 ```
 
-**Benefits:**
-- No external dependency on a running PostgreSQL instance
-- No in-memory surrogate database
-- Same PostgreSQL engine/config used in local runtime
-- Real PostgreSQL dialect and constraint behavior
+**What this guarantees:**
 
-**FX rate seeding** (`FxRateTestSeedRunner`):
-- Activated only in `test` profile
-- Runs as CommandLineRunner on startup
-- Inserts 8 FX rates (same as production)
-- Idempotent: checks existing count before inserting
+- Tests validate the **same Flyway migrations** used in production (`V1`…`V4`).
+- Hibernate's `validate` mode fails fast if a JPA mapping drifts from the schema.
+- FX rates are seeded by Flyway `V2`, so no separate test-only FX seeder is needed.
+- One PostgreSQL container is reused across Spring test contexts; each test class cleans its own domain state.
+- Unit tests (`EmployeeServiceTest`, `CompensationServiceTest`, `AnalyticsServiceTest`, `EmployeeControllerTest`) use Mockito only and do not start containers.
+
+**First run:** Docker (or a compatible daemon) must be available on the developer machine or CI runner; the container image (`postgres:17-alpine`) is pulled once and cached.
+
+> If you use **Colima** (or another non-Docker-Desktop daemon), Testcontainers may not auto-discover the socket. Export before running tests:
+> ```bash
+> export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+> export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="/var/run/docker.sock"
+> ```
 
 ### Local PostgreSQL Development Setup (Optional)
 
@@ -691,7 +714,7 @@ The application supports four Spring profiles: **dev**, **test**, **prod**, and 
 | Profile | Database | Use Case | Auto-seed | Logging | Pool Size |
 |---------|----------|----------|-----------|---------|-----------|
 | **dev** | PostgreSQL (localhost:5432) | Local development | false | DEBUG | 10 |
-| **test** | PostgreSQL (Docker Compose) | Unit & integration tests | false | WARN | 10 |
+| **test** | PostgreSQL via **Testcontainers** (`postgres:17-alpine`) | Unit & integration tests | false | WARN | default |
 | **prod** | PostgreSQL (production) | Production deployment | false | WARN | 20 |
 | **docker** | PostgreSQL (docker network host `postgres`) | Running app in Docker network | false | INFO | 10 |
 

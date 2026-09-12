@@ -1,19 +1,25 @@
+# The `test` profile mirrors the automatic test classpath configuration:
+# a Testcontainers-managed PostgreSQL container, real Flyway migrations,
+# and `ddl-auto=validate` so the JPA mappings must match the migrated schema.
 spring:
   datasource:
-    url: ${PAYLENS_TEST_DATASOURCE_URL:${PAYLENS_DATASOURCE_URL:jdbc:postgresql://localhost:5432/paylens}}
-    username: ${PAYLENS_DATASOURCE_USERNAME:paylens}
-    password: ${PAYLENS_DATASOURCE_PASSWORD:paylens}
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:tc:postgresql:17-alpine:///paylens
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    username: test
+    password: test
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         default_schema: public
   flyway:
-    enabled: false
+    enabled: true
+    default-schema: public
+    schemas: public
+    locations: classpath:db/migration
 
 paylens:
   employee:

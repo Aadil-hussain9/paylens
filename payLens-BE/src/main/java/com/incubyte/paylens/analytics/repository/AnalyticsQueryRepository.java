@@ -12,23 +12,34 @@ import com.incubyte.paylens.analytics.web.dto.AnalyticsFilter;
 @Repository
 public class AnalyticsQueryRepository {
 
+    // --- Shared SQL fragments -------------------------------------------------
+    // The whole analytics stack normalises native salaries to USD by dividing by
+    // the seeded FX rate. Keeping the expression in one place guarantees that
+    // summary, distribution, and group-by queries stay in lock-step.
+    private static final String USD_SALARY = "(e.current_salary / fx.rate_to_usd)";
+
+    private static final String EMPLOYEE_FX_JOIN = """
+            FROM employee e
+            JOIN fx_rate fx ON fx.currency = e.currency
+            """;
+
     private static final String FILTER_CLAUSE = """
             WHERE (CAST(:country AS text) IS NULL OR LOWER(e.country) = LOWER(CAST(:country AS text)))
               AND (CAST(:department AS text) IS NULL OR LOWER(e.department) = LOWER(CAST(:department AS text)))
               AND (CAST(:jobTitle AS text) IS NULL OR LOWER(e.job_title) = LOWER(CAST(:jobTitle AS text)))
             """;
 
-    private static final String SUMMARY_SQL = """
+    // COALESCE(..., 0)::numeric(19,2) mirrors the DECIMAL(19,2) column and keeps
+    // the response types stable when the filtered result set is empty.
+    private static final String SUMMARY_SQL = ("""
             SELECT
                 COUNT(*) AS total_employees,
-                COALESCE(SUM(e.current_salary / fx.rate_to_usd), 0)::numeric(19,2) AS total_payroll,
-                COALESCE(AVG(e.current_salary / fx.rate_to_usd), 0)::numeric(19,2) AS average_salary,
-                COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (e.current_salary / fx.rate_to_usd)), 0)::numeric(19,2) AS median_salary
-            FROM employee e
-            JOIN fx_rate fx ON fx.currency = e.currency
-            """ + FILTER_CLAUSE;
+                COALESCE(SUM(%1$s), 0)::numeric(19,2) AS total_payroll,
+                COALESCE(AVG(%1$s), 0)::numeric(19,2) AS average_salary,
+                COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY %1$s), 0)::numeric(19,2) AS median_salary
+            """ + EMPLOYEE_FX_JOIN + FILTER_CLAUSE).formatted(USD_SALARY);
 
-    private static final String DISTRIBUTION_SQL = """
+    private static final String DISTRIBUTION_SQL = ("""
             WITH buckets AS (
                 SELECT * FROM (VALUES
                     (1, '0-50K'),
@@ -39,10 +50,8 @@ public class AnalyticsQueryRepository {
                 ) AS b(bucket_order, range_label)
             ),
             filtered AS (
-                SELECT (e.current_salary / fx.rate_to_usd) AS usd_salary
-                FROM employee e
-                JOIN fx_rate fx ON fx.currency = e.currency
-            """ + FILTER_CLAUSE + """
+                SELECT %1$s AS usd_salary
+            """ + EMPLOYEE_FX_JOIN + FILTER_CLAUSE + """
             ),
             counts AS (
                 SELECT
@@ -61,7 +70,7 @@ public class AnalyticsQueryRepository {
             FROM buckets b
             LEFT JOIN counts c ON c.bucket_order = b.bucket_order
             ORDER BY b.bucket_order
-            """;
+            """).formatted(USD_SALARY);
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -102,19 +111,19 @@ public class AnalyticsQueryRepository {
     }
 
     private List<AnalyticsGroupProjection> fetchGroupedBy(String groupField, AnalyticsFilter filter) {
-        String sql = """
+        // %1$s = grouping column (safe: internal enum, never user input)
+        // %2$s = USD-normalised salary expression
+        String sql = ("""
                 SELECT
-                    e.%s AS group_value,
+                    e.%1$s AS group_value,
                     COUNT(*) AS employee_count,
-                    COALESCE(SUM(e.current_salary / fx.rate_to_usd), 0)::numeric(19,2) AS total_payroll,
-                    COALESCE(AVG(e.current_salary / fx.rate_to_usd), 0)::numeric(19,2) AS average_salary,
-                    COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (e.current_salary / fx.rate_to_usd)), 0)::numeric(19,2) AS median_salary
-                FROM employee e
-                JOIN fx_rate fx ON fx.currency = e.currency
-                %s
-                GROUP BY e.%s
-                ORDER BY total_payroll DESC, e.%s ASC
-                """.formatted(groupField, FILTER_CLAUSE, groupField, groupField);
+                    COALESCE(SUM(%2$s), 0)::numeric(19,2) AS total_payroll,
+                    COALESCE(AVG(%2$s), 0)::numeric(19,2) AS average_salary,
+                    COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY %2$s), 0)::numeric(19,2) AS median_salary
+                """ + EMPLOYEE_FX_JOIN + FILTER_CLAUSE + """
+                GROUP BY e.%1$s
+                ORDER BY total_payroll DESC, e.%1$s ASC
+                """).formatted(groupField, USD_SALARY);
 
         return jdbcTemplate.query(sql, parameters(filter), (rs, rowNum) -> new AnalyticsGroupProjection(
                 rs.getString("group_value"),

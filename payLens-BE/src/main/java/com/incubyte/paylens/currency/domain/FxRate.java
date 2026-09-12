@@ -13,6 +13,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * FX Rate for currency conversion to USD.
@@ -40,7 +42,9 @@ public class FxRate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "currency", nullable = false, length = 3, unique = true)
+    // The DB stores `currency` as CHAR(3); see Employee for the same reasoning.
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "currency", nullable = false, length = 3, unique = true, columnDefinition = "CHAR(3)")
     private String currency;
 
     @Column(name = "rate_to_usd", nullable = false, precision = 10, scale = 6)

@@ -63,6 +63,7 @@ type LoadState = 'loading' | 'loaded' | 'error' | 'empty';
         @case ('loaded') {
           @if (data(); as d) {
             <app-employee-table 
+              class="flex-table"
               [employees]="d.content"
               [currentSort]="query().sortBy"
               [currentDirection]="query().sortDirection"
@@ -85,8 +86,27 @@ type LoadState = 'loading' | 'loaded' | 'error' | 'empty';
   `,
   styles: [
     `
+      :host {
+        display: block;
+        flex: 1;
+        position: relative;
+        min-height: 0;
+      }
       .page { 
-        max-width: 1200px; 
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        max-width: 1200px;
+        width: 100%;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+      }
+      .flex-table {
+        flex: 1;
+        min-height: 0;
         display: flex;
         flex-direction: column;
       }

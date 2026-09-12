@@ -59,8 +59,9 @@ export type SortDirection = 'asc' | 'desc';
       background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      overflow-x: auto;
-      margin-bottom: 24px;
+      overflow: auto;
+      flex: 1;
+      min-height: 0;
     }
     .table {
       width: 100%;
@@ -75,6 +76,9 @@ export type SortDirection = 'asc' | 'desc';
       color: #475569;
       border-bottom: 1px solid #e2e8f0;
       white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
     td {
       padding: 14px 16px;

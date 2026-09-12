@@ -1,22 +1,32 @@
+# Test datasource is provisioned by Testcontainers via the JDBC "tc:" URL scheme.
+# A PostgreSQL 17 container is started automatically the first time the URL is used
+# and reused across Spring test contexts. Flyway migrations run against the container
+# so tests validate the SAME schema used in production. Hibernate is set to `validate`
+# to guarantee mapping/schema parity (no create-drop drift).
 spring:
   datasource:
-    url: ${PAYLENS_TEST_DATASOURCE_URL:${PAYLENS_DATASOURCE_URL:jdbc:postgresql://localhost:5432/paylens}}
-    username: ${PAYLENS_DATASOURCE_USERNAME:paylens}
-    password: ${PAYLENS_DATASOURCE_PASSWORD:paylens}
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:tc:postgresql:17-alpine:///paylens
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    username: test
+    password: test
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         default_schema: public
   flyway:
-    enabled: false
+    enabled: true
+    default-schema: public
+    schemas: public
+    locations: classpath:db/migration
 
 paylens:
   employee:
     seed:
       enabled: false
+  analytics:
+    reporting-currency: USD
 

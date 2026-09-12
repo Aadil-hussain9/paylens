@@ -35,6 +35,8 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
         overflow-y: auto;
         padding: 24px;
         background: var(--color-bg, #f8fafc);
+        display: flex;
+        flex-direction: column;
       }
     `,
   ],

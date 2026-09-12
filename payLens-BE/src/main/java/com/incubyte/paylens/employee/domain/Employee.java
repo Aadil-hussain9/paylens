@@ -16,6 +16,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "employee", indexes = {
@@ -64,7 +66,10 @@ public class Employee {
     @Column(name = "current_salary", nullable = false, precision = 19, scale = 2)
     private BigDecimal currentSalary;
 
-    @Column(name = "currency", nullable = false, length = 3)
+    // The DB stores `currency` as CHAR(3). Without the explicit @JdbcTypeCode the
+    // default String → VARCHAR mapping trips Hibernate's `ddl-auto=validate` check.
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "currency", nullable = false, length = 3, columnDefinition = "CHAR(3)")
     private String currency;
 
     public Employee(String employeeNumber, String firstName, String lastName, String jobTitle,

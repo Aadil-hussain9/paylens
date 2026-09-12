@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,6 +36,22 @@ class SeedDataIntegrityTest {
 
     @Autowired
     private FxRateRepository fxRateRepository;
+
+    @Autowired
+    private EmployeeSeedRunner seedRunner;
+
+    /**
+     * The Testcontainers-backed PostgreSQL instance is shared across Spring test contexts,
+     * so an earlier test class (with a different context) may have wiped the employees
+     * seeded on startup. Make the seed state deterministic before each assertion.
+     */
+    @BeforeEach
+    void ensureSeeded() throws Exception {
+        if (employeeRepository.count() != 10_000) {
+            employeeRepository.deleteAll();
+            seedRunner.run();
+        }
+    }
 
     @Test
     void shouldSeedExactlyTenThousandEmployees() {
